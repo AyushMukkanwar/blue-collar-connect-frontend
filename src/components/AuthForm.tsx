@@ -1,89 +1,112 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
-import { FcGoogle } from "react-icons/fc";
-import { signIn, signUp, handleGoogleCredential } from "@/firebase/actions";
-import { auth } from "@/firebase/config";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import type React from "react"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Loader2 } from "lucide-react"
+import { FcGoogle } from "react-icons/fc"
+import { signIn, signUp, handleGoogleCredential } from "@/firebase/actions"
+import { auth } from "@/firebase/config"
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 
 export default function AuthForm() {
-  const [isSignUp, setIsSignUp] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [isSignUp, setIsSignUp] = useState(true)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+    e.preventDefault()
+    setError("")
+    setLoading(true)
 
     try {
-      const result = isSignUp
-        ? await signUp(email, password)
-        : await signIn(email, password);
+      const result = isSignUp ? await signUp(email, password) : await signIn(email, password)
 
       if (result.error) {
-        setError(result.error);
+        setError(result.error)
       } else {
-        router.push("/complete-profile");
+        router.push("/complete-profile")
       }
     } catch (error) {
-      setError("An unexpected error occurred.");
+      setError("An unexpected error occurred.")
     }
 
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   const handleGoogleSignIn = async () => {
-    setError("");
-    setLoading(true);
+    setError("")
+    setLoading(true)
 
     try {
       // Handle Google sign-in on client side first
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      const provider = new GoogleAuthProvider()
+      const result = await signInWithPopup(auth, provider)
 
       // Get the credential from the sign-in result
-      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const credential = GoogleAuthProvider.credentialFromResult(result)
 
       if (credential?.idToken) {
         // Send the credential to server action
-        const serverResult = await handleGoogleCredential(credential.idToken);
+        const serverResult = await handleGoogleCredential(credential.idToken)
 
         if (serverResult.error) {
-          setError(serverResult.error);
-          setLoading(false);
-          return;
+          setError(serverResult.error)
+          setLoading(false)
+          return
         }
 
         // Only navigate if there was no error
-        router.push("/complete-profile");
+        router.push("/complete-profile")
       } else {
-        setError("Failed to get Google credentials.");
+        setError("Failed to get Google credentials.")
       }
     } catch (error) {
-      setError("Failed to sign in with Google. Please try again.");
-      console.error("ERROR while signing in with Google: ", error);
+      setError("Failed to sign in with Google. Please try again.")
+      console.error("ERROR while signing in with Google: ", error)
     }
 
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   return (
-    <div className="p-8">
-      <h2 className="mb-6 text-center text-2xl font-bold text-gray-800">
-        {isSignUp ? "Create an Account" : "Sign In"}
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="px-5 py-8 sm:px-8 w-full max-w-md mx-auto">
+      <div className="mb-8 text-center">
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">{isSignUp ? "Create Account" : "Welcome Back"}</h2>
+        <p className="text-gray-600 text-sm">
+          {isSignUp ? "Sign up to get started with Blue Collar Connect" : "Sign in to continue to your account"}
+        </p>
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full flex items-center justify-center py-6 mb-6 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+        onClick={handleGoogleSignIn}
+        disabled={loading}
+      >
+        <FcGoogle className="mr-2 h-5 w-5" />
+        <span className="text-base">Continue with Google</span>
+      </Button>
+
+      <div className="flex items-center justify-center mb-6">
+        <div className="flex-grow h-px bg-gray-200"></div>
+        <span className="px-4 text-sm text-gray-500">or continue with email</span>
+        <div className="flex-grow h-px bg-gray-200"></div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+            Email
+          </Label>
           <Input
             id="email"
             type="email"
@@ -91,58 +114,59 @@ export default function AuthForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className="py-6 px-4 rounded-xl border-gray-300 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex justify-between">
+            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+              Password
+            </Label>
+            {!isSignUp && (
+              <a href="#" className="text-sm text-blue-600 hover:underline">
+                Forgot password?
+              </a>
+            )}
+          </div>
           <Input
             id="password"
             type="password"
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            className="py-6 px-4 rounded-xl border-gray-300 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : isSignUp ? (
-            "Sign Up"
-          ) : (
-            "Sign In"
-          )}
+
+        <Button
+          type="submit"
+          className="w-full py-6 rounded-xl text-base font-medium transition-all"
+          disabled={loading}
+        >
+          {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isSignUp ? "Create Account" : "Sign In"}
         </Button>
       </form>
-      <div className="my-4 flex items-center justify-center">
-        <span className="border-b w-1/5 lg:w-1/4"></span>
-        <span className="text-xs text-center text-gray-500 uppercase px-2">
-          or
-        </span>
-        <span className="border-b w-1/5 lg:w-1/4"></span>
-      </div>
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        onClick={handleGoogleSignIn}
-        disabled={loading}
-      >
-        <FcGoogle className="mr-2" />
-        Sign {isSignUp ? "up" : "in"} with Google
-      </Button>
+
       {error && (
-        <p className="mt-4 text-center text-sm text-red-600">{error}</p>
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-center text-sm text-red-600">{error}</p>
+        </div>
       )}
-      <p className="mt-4 text-center text-sm text-gray-600">
-        {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-        <button
-          type="button"
-          className="font-medium text-blue-600 hover:underline"
-          onClick={() => setIsSignUp(!isSignUp)}
-        >
-          {isSignUp ? "Sign In" : "Sign Up"}
-        </button>
-      </p>
+
+      <div className="mt-6 text-center">
+        <p className="text-gray-600">
+          {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+          <button
+            type="button"
+            className="font-medium text-blue-600 hover:underline"
+            onClick={() => setIsSignUp(!isSignUp)}
+          >
+            {isSignUp ? "Sign In" : "Sign Up"}
+          </button>
+        </p>
+      </div>
     </div>
-  );
+  )
 }
+

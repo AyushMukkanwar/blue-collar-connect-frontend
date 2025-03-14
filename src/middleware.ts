@@ -1,17 +1,20 @@
-// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Define public routes that don't require authentication
-const publicRoutes = ["/auth"];
+// Public routes that don't require authentication
+const publicRoutes = ["/auth", "/community"];
 const profileNotRequiredRoutes = [...publicRoutes, "/complete-profile"];
+
+function isPublicRoute(path: string) {
+  return publicRoutes.some(route => path === route || path.startsWith("/community/") || path.startsWith("/create-community") || path.startsWith("/chat"));
+}
 
 export async function middleware(request: NextRequest) {
   const session = request.cookies.get("session")?.value;
   const path = request.nextUrl.pathname;
 
-  // Allow access to public routes
-  if (publicRoutes.includes(path)) {
+  //Allow access to public routes and all `/community` subroutes
+  if (isPublicRoute(path)) {
     // If user is authenticated, redirect to dashboard
     if (session) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
@@ -19,20 +22,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check authentication
+  // Redirect to /auth if not authenticated
   if (!session) {
     const response = NextResponse.redirect(new URL("/auth", request.url));
     response.cookies.delete("session");
     return response;
   }
 
-  // For protected routes, verify user profile status
+  // For protected routes, check user profile completion
   if (!profileNotRequiredRoutes.includes(path)) {
     try {
-      // Get idToken from cookie
       const userProfileStatus = request.cookies.get("userProfile")?.value;
 
-      // If profile is not complete, redirect to complete profile
+      // Redirect to complete profile if profile not complete
       if (!userProfileStatus) {
         return NextResponse.redirect(new URL("/complete-profile", request.url));
       }
