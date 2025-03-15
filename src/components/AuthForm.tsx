@@ -1,106 +1,112 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
-import { FcGoogle } from "react-icons/fc"
-import { signIn, signUp, handleGoogleCredential } from "@/firebase/actions"
-import { auth } from "@/firebase/config"
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import type React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { signIn, register } from "@/actions/auth";
+import { getUserProfile } from "@/actions/profile";
+import { getUID } from "@/utils";
 
 export default function AuthForm() {
-  const [isSignUp, setIsSignUp] = useState(true)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const [isSignUp, setIsSignUp] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [userType, setUserType] = useState("worker");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
-      const result = isSignUp ? await signUp(email, password) : await signIn(email, password)
+      console.log("Current isSignUp state:", isSignUp);
+
+      const result = isSignUp
+        ? await register(email, password, userType)
+        : await signIn(email, password);
 
       if (result.error) {
-        setError(result.error)
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch user profile from backend
+      const uid = await getUID();
+      const profileResponse = await getUserProfile(uid);
+
+      if (profileResponse?.error === "Profile not found") {
+        // Redirect to profile creation page
+        router.push("/profile");
       } else {
-        router.push("/complete-profile")
+        // Redirect to the intended page after successful login
+        router.push("/dashboard");
       }
     } catch (error) {
-      setError("An unexpected error occurred.")
+      setError("An unexpected error occurred.");
     }
 
-    setLoading(false)
-  }
-
-  const handleGoogleSignIn = async () => {
-    setError("")
-    setLoading(true)
-
-    try {
-      // Handle Google sign-in on client side first
-      const provider = new GoogleAuthProvider()
-      const result = await signInWithPopup(auth, provider)
-
-      // Get the credential from the sign-in result
-      const credential = GoogleAuthProvider.credentialFromResult(result)
-
-      if (credential?.idToken) {
-        // Send the credential to server action
-        const serverResult = await handleGoogleCredential(credential.idToken)
-
-        if (serverResult.error) {
-          setError(serverResult.error)
-          setLoading(false)
-          return
-        }
-
-        // Only navigate if there was no error
-        router.push("/complete-profile")
-      } else {
-        setError("Failed to get Google credentials.")
-      }
-    } catch (error) {
-      setError("Failed to sign in with Google. Please try again.")
-      console.error("ERROR while signing in with Google: ", error)
-    }
-
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   return (
     <div className="px-5 py-8 sm:px-8 w-full max-w-md mx-auto">
       <div className="mb-8 text-center">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">{isSignUp ? "Create Account" : "Welcome Back"}</h2>
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">
+          {isSignUp ? "Create Account" : "Welcome Back"}
+        </h2>
         <p className="text-gray-600 text-sm">
-          {isSignUp ? "Sign up to get started with Blue Collar Connect" : "Sign in to continue to your account"}
+          {isSignUp
+            ? "Sign up to get started with Blue Collar Connect"
+            : "Sign in to continue to your account"}
         </p>
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full flex items-center justify-center py-6 mb-6 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
-        onClick={handleGoogleSignIn}
-        disabled={loading}
-      >
-        <FcGoogle className="mr-2 h-5 w-5" />
-        <span className="text-base">Continue with Google</span>
-      </Button>
-
-      <div className="flex items-center justify-center mb-6">
-        <div className="flex-grow h-px bg-gray-200"></div>
-        <span className="px-4 text-sm text-gray-500">or continue with email</span>
-        <div className="flex-grow h-px bg-gray-200"></div>
-      </div>
+      {isSignUp && (
+        <div className="space-y-2">
+          <Label
+            htmlFor="userType"
+            className="text-sm font-medium text-gray-700"
+          >
+            I am a
+          </Label>
+          <div className="grid grid-cols-2 gap-3 mt-1">
+            <button
+              type="button"
+              onClick={() => setUserType("worker")}
+              className={`flex flex-col items-center justify-center p-4 rounded-xl border ${
+                userType === "worker"
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-gray-200 hover:border-gray-300"
+              } transition-all`}
+            >
+              <span className="font-medium">Skilled Worker</span>
+              <span className="text-xs text-gray-500 mt-1">
+                Looking for jobs
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserType("employer")}
+              className={`flex flex-col items-center justify-center p-4 rounded-xl border ${
+                userType === "employer"
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-gray-200 hover:border-gray-300"
+              } transition-all`}
+            >
+              <span className="font-medium">Employer</span>
+              <span className="text-xs text-gray-500 mt-1">Hiring workers</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
@@ -118,16 +124,12 @@ export default function AuthForm() {
           />
         </div>
         <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-              Password
-            </Label>
-            {!isSignUp && (
-              <a href="#" className="text-sm text-blue-600 hover:underline">
-                Forgot password?
-              </a>
-            )}
-          </div>
+          <Label
+            htmlFor="password"
+            className="text-sm font-medium text-gray-700"
+          >
+            Password
+          </Label>
           <Input
             id="password"
             type="password"
@@ -144,7 +146,13 @@ export default function AuthForm() {
           className="w-full py-6 rounded-xl text-base font-medium transition-all"
           disabled={loading}
         >
-          {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isSignUp ? "Create Account" : "Sign In"}
+          {loading ? (
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          ) : isSignUp ? (
+            "Create Account"
+          ) : (
+            "Sign In"
+          )}
         </Button>
       </form>
 
@@ -167,6 +175,5 @@ export default function AuthForm() {
         </p>
       </div>
     </div>
-  )
+  );
 }
-
