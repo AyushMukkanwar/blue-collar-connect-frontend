@@ -1,16 +1,6 @@
-import { getValidIdToken } from "@/utils";
+import { parseResponse } from "@/utils";
 import { auth } from "../firebase/config";
 import { signInWithEmailAndPassword } from "firebase/auth";
-
-async function parseResponse(res: Response) {
-  const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    console.warn("Unable to parse JSON response, returning raw text:", text);
-    return text;
-  }
-}
 
 /**
  * Calls the backend API to create a new user.

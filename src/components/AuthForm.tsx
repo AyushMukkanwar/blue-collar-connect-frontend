@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { signIn, register } from "@/actions/auth";
 import { getUserProfile } from "@/actions/profile";
-import { getUID } from "@/utils";
 
 export default function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(true);
@@ -38,9 +37,9 @@ export default function AuthForm() {
         return;
       }
 
-      // Fetch user profile from backend
-      const uid = await getUID();
-      const profileResponse = await getUserProfile(uid);
+      const profileResponse = await getUserProfile();
+
+      console.log("user profile = ", profileResponse);
 
       if (profileResponse?.error === "Profile not found") {
         // Redirect to profile creation page
