@@ -28,12 +28,19 @@ export async function getUserProfile() {
 
     console.log("response = ", response);
 
+    // Special handling for 404 - profile doesn't exist yet
+    if (response.status === 404) {
+      console.log("Profile doesn't exist (404 response)");
+      return { profileExists: false };
+    }
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error || `Error: ${response.status}`);
     }
 
-    return await response.json();
+    const profileData = await response.json();
+    return { profileExists: true, profile: profileData };
   } catch (error) {
     console.error("Failed to fetch user profile:", error);
     throw error;

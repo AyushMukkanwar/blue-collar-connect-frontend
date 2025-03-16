@@ -37,19 +37,25 @@ export default function AuthForm() {
         return;
       }
 
-      const profileResponse = await getUserProfile();
+      try {
+        const profileResponse = await getUserProfile();
 
-      console.log("user profile = ", profileResponse);
+        console.log("user profile = ", profileResponse);
 
-      if (profileResponse?.error === "Profile not found") {
-        // Redirect to profile creation page
-        router.push("/profile");
-      } else {
-        // Redirect to the intended page after successful login
-        router.push("/dashboard");
+        // If we got here and profileExists is false, redirect to profile creation
+        if (!profileResponse.profileExists) {
+          console.log("push to profile");
+          router.push("/profile");
+        } else {
+          // Profile exists, redirect to dashboard
+          router.push("/dashboard");
+        }
+      } catch (error) {
+        console.error("Error checking profile:", error);
       }
     } catch (error) {
-      setError("An unexpected error occurred.");
+      setError("An unexpected error occurred during authentication.");
+      console.error(error);
     }
 
     setLoading(false);
