@@ -63,7 +63,6 @@ interface CommentItemProps {
               </button>
               <span>{comment.dislikes}</span>
             </div>
-            <button className="text-blue-600 text-sm hover:underline">Reply</button>
           </div>
   
           {comment.replies && comment.replies.length > 0 && (

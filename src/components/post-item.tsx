@@ -1,17 +1,7 @@
 import Link from "next/link"
-
+import { Post } from "@/app/community/[id]/page"
 interface PostItemProps {
-  post: {
-    id: string
-    title: string
-    content: string
-    author: string
-    timeAgo: string
-    likes: number
-    dislikes: number
-    image?: string
-    comments: any[]
-  }
+  post: Post,
   communityId: string
   communityName: string
 }
@@ -21,11 +11,11 @@ export default function PostItem({ post, communityId, communityName }: PostItemP
     <div className="border border-blue-100 rounded-lg p-4 hover:border-blue-300 transition-colors">
       <div className="flex items-center gap-2 mb-2">
         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-          {communityName.charAt(0)}
+          {post.author.charAt(0)}
         </div>
-        <Link href={`/community/${communityId}`} className="text-blue-600 font-medium hover:underline">
-          {communityName}
-        </Link>
+        <div className="text-blue-600 font-medium hover:underline">
+          {post.author}
+        </div>
         <span className="text-gray-500 text-sm">• {post.timeAgo}</span>
       </div>
       <Link href={`/community/${communityId}/post/${post.id}`}>

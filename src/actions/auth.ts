@@ -1,6 +1,6 @@
 import { getValidIdToken } from "@/utils";
 import { auth } from "../firebase/config";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { getIdToken, signInWithEmailAndPassword } from "firebase/auth";
 
 async function parseResponse(res: Response) {
   const text = await res.text();
@@ -17,7 +17,7 @@ async function parseResponse(res: Response) {
  */
 export async function signUp(email: string, password: string, role: string) {
   try {
-    const response = await fetch("http://localhost:8000/api/auth/sign-up", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/sign-up`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
