@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import CommunityList from "@/components/community-list";
 import { getCurrentUser, getIdTokenNoParam } from "@/utils";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface Timestamp {
   _seconds: number;
@@ -75,13 +76,13 @@ export default function HomePage() {
             },
           }
         );
-        if (!res.ok) throw new Error("Failed to fetch communities");
+        if (!res.ok) toast.error("Failed to fetch communities");
         const data: CommunitiesApiResponse = await res.json();
         const communities = data.communities || [];
         setAllCommunities(communities);
         setDisplayCommunities(communities);
       } catch (error) {
-        console.error("Error fetching communities:", error);
+        toast.error("Error fetching communities");
       } finally {
         setLoading(false);
       }
@@ -106,7 +107,7 @@ export default function HomePage() {
             },
           }
         );
-        if (!res.ok) throw new Error("Failed to fetch joined communities");
+        if (!res.ok) toast.error("Failed to fetch joined communities");
         const data = await res.json();
         // Adjust the mapping based on your API response format.
         const joinedIds: string[] = Array.isArray(data)
@@ -114,7 +115,7 @@ export default function HomePage() {
           : data.communities.map((community: Community) => community.communityId);
         setJoinedCommunityIds(joinedIds);
       } catch (error) {
-        console.error("Error fetching joined communities:", error);
+        toast.error("Error fetching joined communities");
       }
     };
     fetchJoinedCommunities();
@@ -137,7 +138,7 @@ export default function HomePage() {
             },
           }
         );
-        if (!res.ok) throw new Error("Failed to fetch joined posts");
+        if (!res.ok) toast.error("Failed to fetch joined posts");
         const data = await res.json();
         // Data is in the format: { message: "...", communities: [ { communityId, posts: [...] }, ... ] }
         const posts: (Post & { communityId: string })[] = [];
@@ -150,7 +151,7 @@ export default function HomePage() {
         });
         setJoinedPosts(posts);
       } catch (error) {
-        console.error("Error fetching joined posts:", error);
+        toast.error("Error fetching joined posts");
       }
     };
     fetchJoinedPosts();
@@ -185,12 +186,12 @@ export default function HomePage() {
           },
         }
       );
-      if (!res.ok) throw new Error("Failed to search communities");
+      if (!res.ok) toast.error("Failed to search communities");
       const data = await res.json();
       // Adjust based on your API response field (e.g. "results" or "communities")
       setDisplayCommunities(data.results || []);
     } catch (error) {
-      console.error("Error searching communities:", error);
+      toast.error("Error searching communities");
       setDisplayCommunities([]);
     } finally {
       setLoading(false);
@@ -204,7 +205,7 @@ export default function HomePage() {
       const idToken = await getIdTokenNoParam();
       const currentUser = await getCurrentUser();
       if (!currentUser) {
-        console.error("User is not authenticated");
+        toast.error("User is not authenticated");
         return;
       }
 
@@ -227,12 +228,12 @@ export default function HomePage() {
         setJoinedCommunityIds((prev) =>
           prev.filter((id) => id !== community.communityId)
         );
-        throw new Error("Failed to join community");
+        toast.error("Failed to join community");
       }
       const data = await res.json();
-      console.log("Joined community successfully:", data);
+      toast.success("Joined community successfully");
     } catch (error) {
-      console.error("Error joining community:", error);
+      toast.error("Error joining community");
     }
   };
 
@@ -243,7 +244,7 @@ export default function HomePage() {
       const idToken = await getIdTokenNoParam();
       const currentUser = await getCurrentUser();
       if (!currentUser) {
-        console.error("User is not authenticated");
+        toast.error("User is not authenticated");
         return;
       }
 
@@ -266,13 +267,13 @@ export default function HomePage() {
       );
       if (!res.ok) {
         setJoinedCommunityIds((prev) => [...prev, community.communityId]);
-        throw new Error("Failed to leave community");
+        toast.error("Failed to leave community");
       }
       const data = await res.json();
-      console.log("Left community successfully:", data);
+      toast.success("Left community successfully");
       
     } catch (error) {
-      console.error("Error leaving community:", error);
+      toast.error("Error leaving community");
     }
   };
 

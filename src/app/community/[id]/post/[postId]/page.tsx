@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import CommentItem from "@/components/comment-item";
 import { getIdTokenNoParam, getCurrentUser } from "@/utils";
 import { Blob } from "buffer";
+import { toast } from "sonner";
 
 // Interfaces for the post and comment
 interface Comment {
@@ -60,10 +61,10 @@ export default function PostPage({ params }: PostPageProps) {
       if (res.ok) {
         setPost(data.post);
       } else {
-        console.error("Error fetching post:", data.error);
+        toast.error("Error fetching post");
       }
     } catch (error) {
-      console.error("Error fetching post:", error);
+      toast.error("Error fetching post");
     }
   };
 
@@ -103,13 +104,14 @@ export default function PostPage({ params }: PostPageProps) {
           // re-fetch the post to update the comments
           await fetchPost();
           setCommentContent("");
+          toast.success("Comment added successfully");
         } else {
-          console.error("Error adding comment:", data.error);
+          toast.error("Error adding comment");
         }
       }
       
     } catch (error) {
-      console.error("Error adding comment:", error);
+      toast.error("Error adding comment");
     } finally {
       setLoading(false);
     }

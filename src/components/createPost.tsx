@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { getCurrentUser, getIdTokenNoParam } from "@/utils";
+import { toast } from "sonner";
 
 interface Post {
     communityId: string;
@@ -49,7 +50,7 @@ function CreatePost({ communityId, setPosts }: { communityId: string; setPosts: 
   const handlePostSubmit = async (e: FormEvent) => {
   e.preventDefault();
   if (!newPost.title.trim() || !newPost.content.trim()) {
-    setError("Title and content are required.");
+    toast.error("Title and content are required.");
     return;
   }
 
@@ -79,7 +80,7 @@ function CreatePost({ communityId, setPosts }: { communityId: string; setPosts: 
       body: formData,
     });
 
-    if (!res.ok) throw new Error("Failed to create post");
+    if (!res.ok) toast.error("Failed to create post");
 
     let {post}= await res.json();
 
@@ -89,9 +90,9 @@ function CreatePost({ communityId, setPosts }: { communityId: string; setPosts: 
     setNewPost({ title: "", content: "" });
     setImage(null);
     setPreview(null);
+    toast.success("Post added successfully")
   } catch (err) {
-    console.error(err);
-    setError("Error posting. Try again later.");
+    toast.error("Error posting. Try again later.");
   } finally {
     setLoading(false);
   }
@@ -101,8 +102,6 @@ function CreatePost({ communityId, setPosts }: { communityId: string; setPosts: 
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-6">
       <h2 className="text-lg font-semibold text-blue-600 mb-4">Create Post</h2>
-
-      {error && <p className="text-red-500 mb-2">{error}</p>}
 
       <form onSubmit={handlePostSubmit} className="space-y-4">
         <Input

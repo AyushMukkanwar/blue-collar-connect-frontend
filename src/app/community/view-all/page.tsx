@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getCurrentUser, getIdTokenNoParam } from "@/utils";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface Timestamp {
   _seconds: number;
@@ -60,12 +61,12 @@ export default function CommunitiesPage() {
             },
           }
         );
-        if (!res.ok) throw new Error("Failed to fetch communities");
+        if (!res.ok) toast.error("Failed to fetch communities");
         const data: CommunitiesApiResponse = await res.json();
         const communities = data.communities || [];
         setAllCommunities(communities);
       } catch (error) {
-        console.error("Error fetching communities:", error);
+        toast.error("Error fetching communities");
       } finally {
         setLoading(false);
       }
@@ -90,14 +91,14 @@ export default function CommunitiesPage() {
             },
           }
         );
-        if (!res.ok) throw new Error("Failed to fetch joined communities");
+        if (!res.ok) toast.error("Failed to fetch joined communities");
         const data = await res.json();
         const joined: Community[] = Array.isArray(data)
           ? data.map((comm: Community) => comm)
           : data.communities;
         setJoinedCommunities(joined);
       } catch (error) {
-        console.error("Error fetching joined communities:", error);
+        toast.error("Error fetching joined communities");
       }
     };
     fetchJoinedCommunities();
@@ -128,7 +129,7 @@ export default function CommunitiesPage() {
           },
         }
       );
-      if (!res.ok) throw new Error("Failed to search communities");
+      if (!res.ok) toast.error("Failed to search communities");
       const data = await res.json();
       const searchResults: Community[] = data.results || data.communities || [];
       // Only include communities not already joined
@@ -136,7 +137,7 @@ export default function CommunitiesPage() {
       const notJoinedResults = searchResults.filter((c) => !joinedIds.has(c.communityId));
       setNotJoinedCommunities(notJoinedResults);
     } catch (error) {
-      console.error("Error searching communities:", error);
+      toast.error("Error searching communities");
       setNotJoinedCommunities([]);
     } finally {
       setLoading(false);
@@ -179,17 +180,17 @@ export default function CommunitiesPage() {
           body: formData,
         }
       );
-      if (!res.ok) throw new Error("Failed to join community");
+      if (!res.ok) toast.error("Failed to join community");
       const data = await res.json();
-      console.log("Joined community:", data);
       // Update joined communities list locally
       setJoinedCommunities((prev) => [...prev, community]);
       // Also remove the joined community from not joined list if present
       setNotJoinedCommunities((prev) =>
         prev.filter((c) => c.communityId !== community.communityId)
       );
+      toast.success("Joined community successfully");
     } catch (error) {
-      console.error("Error joining community:", error);
+      toast.error("Error joining community");
     }
   };
 
@@ -210,9 +211,8 @@ export default function CommunitiesPage() {
           body: formData,
         }
       );
-      if (!res.ok) throw new Error("Failed to leave community");
+      if (!res.ok) toast.error("Failed to leave community");
       const data = await res.json();
-      console.log("Left community:", data);
       // Remove the community from joined list
       setJoinedCommunities((prev) =>
         prev.filter((c) => c.communityId !== community.communityId)
@@ -223,9 +223,10 @@ export default function CommunitiesPage() {
         community.communityName.toLowerCase().includes(searchTerm.toLowerCase())
       ) {
         setNotJoinedCommunities((prev) => [...prev, community]);
+        toast.success("Left community successfully");
       }
     } catch (error) {
-      console.error("Error leaving community:", error);
+      toast.error("Error leaving community");
     }
   };
 
