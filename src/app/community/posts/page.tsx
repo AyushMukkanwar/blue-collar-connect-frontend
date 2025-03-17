@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, getIdTokenNoParam } from "@/utils";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface Timestamp {
   _seconds: number;
@@ -64,7 +65,7 @@ export default function AllPostsPage() {
             },
           }
         );
-        if (!res.ok) throw new Error("Failed to fetch joined posts");
+        if (!res.ok) toast.error("Failed to fetch joined posts");
         const data: JoinedPostsResponse = await res.json();
         // Flatten posts: get all posts from every community.
         const posts: (Post & { communityId: string; communityName: string })[] = [];
@@ -81,7 +82,7 @@ export default function AllPostsPage() {
         });
         setAllPosts(posts);
       } catch (error) {
-        console.error("Error fetching all posts:", error);
+        toast.error("Error fetching all posts");
       } finally {
         setLoading(false);
       }

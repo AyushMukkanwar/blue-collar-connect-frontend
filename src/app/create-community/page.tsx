@@ -67,14 +67,14 @@ export default function CreateCommunityPage() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Network response was not ok");
+      if (!res.ok) toast.error("Network response was not ok");
       const data = await res.json();
 
       toast.success("Community created successfully!");
       console.log("Community created:", data);
     } catch (error) {
       toast.error("Failed to create community. Please try again.");
-      console.error("Error creating community:", error);
+      toast.error("Error creating community");
     } finally {
       setLoading(false);
     }
