@@ -6,6 +6,7 @@ import PostItem from "@/components/post-item";
 import { getCurrentUser, getIdTokenNoParam } from "@/utils";
 import { useParams } from "next/navigation";
 import CreatePost from "@/components/createPost";
+import {toast} from "sonner"
 
 // Timestamp interface for createdAt/updatedAt
 interface Timestamp {
@@ -75,15 +76,14 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
           method: "GET",
           headers: { "Authorization": `Bearer ${idToken}` },
         });
-        if (!res.ok) throw new Error("Failed to fetch community details");
+        if (!res.ok) toast.error("Failed to fetch community details");
         const data = await res.json();
         // Assume API returns the community data under 'community'
         const resCommunity: Community = data.community;
         setCommunity(resCommunity);
         setLoading(false)
       } catch (err) {
-        console.error(err);
-        setError("Failed to load community");
+        toast.error("Failed to load community details")
         setLoading(false)
       }
     }
@@ -102,11 +102,11 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
             "Authorization": `Bearer ${idToken}`
           },
         });
-        if (!res.ok) throw new Error("Failed to fetch posts");
+        if (!res.ok) toast.error("Failed to fetch posts. Try again later");
         const data = await res.json();
         setPosts(data.posts);
       } catch (err) {
-        console.error("Failed to load posts", err);
+        toast.error("Failed to load posts");
       }
     }
     fetchCommunityPosts();
@@ -129,7 +129,7 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
             },
           }
         );
-        if (!res.ok) throw new Error("Failed to fetch joined communities");
+        if (!res.ok) throw toast.error("Failed to fetch joined communities. Try again later");
         const data = await res.json();
         // If API returns an array directly, use it; otherwise, use data.communities.
         const joinedIds: string[] = Array.isArray(data)
@@ -138,7 +138,7 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
         setJoinedCommunityIds(joinedIds);
         
       } catch (error) {
-        console.error("Error fetching joined communities:", error);
+        toast.error("Error fetching joined communities. Try again later");
       }
     }
     fetchJoinedCommunities();
@@ -160,13 +160,12 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
       const user = await getCurrentUser();
       const userId = user?.uid;
       if (!userId) {
-        console.error("User is not authenticated");
+        toast.error("User is not authenticated");
         return;
       }
       formData.append("userId",userId)
       formData.append("communityId",community.communityId)
       formData.append("communityName", community.communityName)
-      console.log(community.communityName)
       
       const idToken = await getIdTokenNoParam();
       if (isMember) {
@@ -183,11 +182,12 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
         console.log(data)
         if (!res.ok) {
           setIsMember(true);
-          throw new Error("Failed to leave community");
+          toast.error("Failed to leave community");
         }
         
         // Optionally update joined community IDs state
         setJoinedCommunityIds((prev) => prev.filter((id) => id !== community.communityId));
+        toast.success(`Successfully left ${community.communityName}`);
       } else {
         // Join community
         setIsMember(true);
@@ -200,17 +200,21 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
         });
         if (!res.ok) {
           setIsMember(false);
-          throw new Error("Failed to join community");
+          toast.error("Failed to join community");
         }
         setJoinedCommunityIds((prev) => [...prev, community.communityId]);
+        toast.success(`Successfully Joined ${community.communityName}`);
       }
     } catch (err) {
-      console.error(err);
+      toast.error("Unexpected error occured. Please refresh the page and try again");
     }
   };
 
   if (loading) return <div className="text-center py-10">Loading...</div>;
-  if (error || !community) return <div className="text-red-500 text-center py-10">{error || "Community not found"}</div>;
+  if (error || !community) {
+    toast.error("Failed to load community.Please try again later");
+    return <div className="text-center py-10">Failed to load community</div>;
+  }
 
   return (
     <div className="bg-gradient-to-b from-blue-50 to-white min-h-screen">
@@ -221,7 +225,7 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
         {/* Background Image covering entire width */}
         <div className="w-full h-32">
           <img
-            src={community.communityBackgroundPhoto}
+            src={community?.communityBackgroundPhoto}
             alt=""
             className="w-full h-full object-cover"
           />
@@ -230,8 +234,8 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
           {/* Community profile photo placed above the text */}
           <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white mb-4">
             <img
-              src={community.communityProfilePhoto}
-              alt={`${community.communityName} profile`}
+              src={community?.communityProfilePhoto}
+              alt={`${community?.communityName} profile`}
               className="w-full h-full object-cover"
             />
           </div>
@@ -239,10 +243,10 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
             <div className="flex justify-between items-start">
               <div>
                 <h1 className="text-2xl font-bold text-blue-600">
-                  {community.communityName}
+                  {community?.communityName}
                 </h1>
                 <p className="text-gray-500 text-sm">
-                  {community.memberCount} members
+                  {community?.memberCount} members
                 </p>
               </div>
               <Button
@@ -252,7 +256,7 @@ export default function CommunityPage({ params }: { params: { id: string } }) {
                 {isMember ? "Leave Community" : "Join Community"}
               </Button>
             </div>
-            <p className="mt-4 text-gray-700">{community.description}</p>
+            <p className="mt-4 text-gray-700">{community?.description}</p>
           </div>
         </div>
       </div>
