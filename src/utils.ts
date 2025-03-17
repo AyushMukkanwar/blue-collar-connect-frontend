@@ -2,6 +2,7 @@
 
 import { User } from "firebase/auth";
 import { auth } from "./firebase/config";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export async function parseResponse(res: Response) {
   const text = await res.text();
@@ -27,12 +28,12 @@ export async function getValidIdToken(user: User): Promise<string> {
 }
 
 export async function getIdTokenNoParam(): Promise<string> {
-  const user = auth.currentUser;
+  const user = await getCurrentUser();
   if (!user) {
     throw new Error("No authenticated user found.");
   }
 
-  const idToken = await user.getIdToken(true); // Force refresh to ensure freshness
+  const idToken = await user.getIdToken(true);
   if (!idToken) {
     throw new Error("Failed to retrieve ID token.");
   }
@@ -47,6 +48,23 @@ export const getUID = async () => {
   }
 
   return uid;
+};
+
+export const getCurrentUser = (): Promise<User | null> => {
+  const auth = getAuth();
+  return new Promise((resolve, reject) => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+        unsubscribe();
+        resolve(user);
+      },
+      (error) => {
+        unsubscribe();
+        reject(error);
+      }
+    );
+  });
 };
 
 export async function getUserInfo(idToken: string) {

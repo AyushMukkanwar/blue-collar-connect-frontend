@@ -45,10 +45,10 @@ export default function AuthForm() {
         // If we got here and profileExists is false, redirect to profile creation
         if (!profileResponse.profileExists) {
           console.log("push to profile");
-          router.push("/profile");
+          // router.push("/profile");
         } else {
           // Profile exists, redirect to dashboard
-          router.push("/dashboard");
+          // router.push("/dashboard");
         }
       } catch (error) {
         console.error("Error checking profile:", error);
