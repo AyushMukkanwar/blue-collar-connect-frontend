@@ -1,7 +1,8 @@
-import { getValidIdToken } from "@/utils";
 import { auth } from "../firebase/config";
-import { getIdToken, signInWithEmailAndPassword } from "firebase/auth";
-
+import {
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+} from "firebase/auth";
 async function parseResponse(res: Response) {
   const text = await res.text();
   try {
@@ -40,38 +41,11 @@ export async function signUp(email: string, password: string, role: string) {
 }
 
 /**
- * Calls the backend API to sign out a user using the provided ID token.
- */
-export async function signOut(idToken: string) {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/sign-out`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    const data = await parseResponse(res);
-    if (!res.ok) {
-      throw new Error(data.error || "Failed to sign out");
-    }
-    return data;
-  } catch (error: any) {
-    console.error("Sign-out error:", error.message);
-    return { error: error.message };
-  }
-}
-
-/**
  * Handles user login by ensuring the user is signed in via Firebase,
  * retrieving a valid ID token, and then calling the backend API.
  */
 export async function signIn(email: string, password: string) {
   try {
-    // Sign in with Firebase using the initialized auth instance
     const userCredential = await signInWithEmailAndPassword(
       auth,
       email,
@@ -79,30 +53,30 @@ export async function signIn(email: string, password: string) {
     );
     const user = userCredential.user;
 
-    // Ensure user is authenticated
     if (!user) {
       throw new Error("User authentication failed.");
     }
 
-    // Get the user's ID token for future use with your backend if needed
-    const idToken = await user.getIdToken();
+    // Set a simple session cookie - this is just to let the middleware know
+    // the user has signed in, not for actual authentication
+    document.cookie = `firebaseSession=true; path=/; max-age=${
+      60 * 60 * 24 * 14
+    }; SameSite=Strict${
+      process.env.NODE_ENV === "production" ? "; Secure" : ""
+    }`;
 
-    console.log("Firebase sign-in successful");
-
-    // Return the user and token for use in your application
     return {
       success: true,
       user: {
         uid: user.uid,
         email: user.email,
       },
-      idToken: idToken,
     };
   } catch (error: any) {
     console.error("Sign-in failed:", error.message);
     return {
       success: false,
-      error: error.message || "Unexpected error occurred while signing in",
+      error: error.message,
     };
   }
 }
@@ -131,5 +105,16 @@ export async function register(email: string, password: string, role: string) {
     return {
       error: error.message || "Unexpected error occurred during registration",
     };
+  }
+}
+
+export async function signOut() {
+  try {
+    await firebaseSignOut(auth);
+    // Clear the session cookie
+    document.cookie = "firebaseSession=; path=/; max-age=0";
+    console.log("Signed out successfully");
+  } catch (error) {
+    console.error("Sign-out error:", error);
   }
 }

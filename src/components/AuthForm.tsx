@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { signIn, register } from "@/actions/auth";
 import { getUserProfile } from "@/actions/profile";
-import { getUID } from "@/utils";
 
 export default function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(true);
@@ -39,19 +38,25 @@ export default function AuthForm() {
         return;
       }
 
-      // Fetch user profile from backend
-      const uid = await getUID();
-      const profileResponse = await getUserProfile(uid);
+      try {
+        const profileResponse = await getUserProfile();
 
-      if (profileResponse?.error === "Profile not found") {
-        // Redirect to profile creation page
-        router.push("/profile");
-      } else {
-        // Redirect to the intended page after successful login
-        router.push("/dashboard");
+        console.log("user profile = ", profileResponse);
+
+        // If we got here and profileExists is false, redirect to profile creation
+        if (!profileResponse.profileExists) {
+          console.log("push to profile");
+          router.push("/profile");
+        } else {
+          // Profile exists, redirect to dashboard
+          router.push("/dashboard");
+        }
+      } catch (error) {
+        console.error("Error checking profile:", error);
       }
     } catch (error) {
-      setError("An unexpected error occurred.");
+      setError("An unexpected error occurred during authentication.");
+      console.error(error);
     }
 
     setLoading(false);

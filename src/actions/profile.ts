@@ -1,35 +1,48 @@
-"use server";
+"use client";
 
-import { getIdTokenNoParam } from "@/utils";
+import { getIdTokenNoParam, getUID } from "@/utils";
 
-export async function getUserProfile(uid: string) {
+export async function getUserProfile() {
+  const idToken = await getIdTokenNoParam();
+  const userId = await getUID();
+
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  if (!idToken) {
+    throw new Error("Authentication token is required");
+  }
+
   try {
-    // Step 1: Get a fresh ID token from the client
-    const idToken = await getIdTokenNoParam();
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/profile/${userId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+      }
+    );
 
-    // Step 2: Make API request to backend
-    const backendUrl = `http://localhost:8000/api/user/profile/${uid}`;
+    console.log("response = ", response);
 
-    const response = await fetch(backendUrl, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-
+    // Special handling for 404 - profile doesn't exist yet
     if (response.status === 404) {
-      return { noProfile: true }; // Custom response to indicate missing profile
+      console.log("Profile doesn't exist (404 response)");
+      return { profileExists: false };
     }
 
     if (!response.ok) {
-      throw new Error("Failed to fetch user profile from backend.");
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Error: ${response.status}`);
     }
 
-    const data = await response.json();
-    return { noProfile: false, profile: data }; // Successful response
-  } catch (error: any) {
-    console.error("Error fetching user profile:", error.message);
-    return { error: error.message };
+    const profileData = await response.json();
+    return { profileExists: true, profile: profileData };
+  } catch (error) {
+    console.error("Failed to fetch user profile:", error);
+    throw error;
   }
 }

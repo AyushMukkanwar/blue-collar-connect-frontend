@@ -4,6 +4,16 @@ import { User } from "firebase/auth";
 import { auth} from "./firebase/config";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
+export async function parseResponse(res: Response) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.warn("Unable to parse JSON response, returning raw text:", text);
+    return text;
+  }
+}
+
 export async function getValidIdToken(user: User): Promise<string> {
   if (!user) {
     throw new Error("No authenticated user found.");
@@ -41,7 +51,6 @@ export const getUID = async () => {
   return uid;
 };
 
-
 export const getCurrentUser = (): Promise<User | null> => {
   const auth = getAuth();
   return new Promise((resolve, reject) => {
@@ -58,3 +67,26 @@ export const getCurrentUser = (): Promise<User | null> => {
     );
   });
 };
+
+export async function getUserInfo(idToken: string) {
+  try {
+    const backendUrl =
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
+    const res = await fetch(`${backendUrl}/api/auth/sign-in`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        Accept: "application/json",
+      },
+    });
+    const data = await parseResponse(res);
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to sign in");
+    }
+    return data;
+  } catch (error: any) {
+    console.error("Backend sign in error:", error.message);
+    return { error: error.message };
+  }
+}
