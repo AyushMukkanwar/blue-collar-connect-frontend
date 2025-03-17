@@ -30,6 +30,7 @@ export default function AuthForm() {
       const result = isSignUp
         ? await register(email, password, userType)
         : await signIn(email, password);
+        console.log(result)
 
       if (result.error) {
         setError(result.error);

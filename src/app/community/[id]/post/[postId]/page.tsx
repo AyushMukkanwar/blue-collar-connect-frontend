@@ -1,19 +1,128 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { communities } from "@/lib/data"
-import CommentItem from "@/components/comment-item"
+"use client"
+import { useState, useEffect, FormEvent } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import CommentItem from "@/components/comment-item";
+import { getIdTokenNoParam, getCurrentUser } from "@/utils";
+import { Blob } from "buffer";
+
+// Interfaces for the post and comment
+interface Comment {
+  id: string;
+  author: string;
+  content: string;
+  timeAgo: string;
+  likes: number;
+  dislikes: number;
+}
+
+interface CommunityPost {
+  communityId: string;
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  timeAgo: string;
+  likes: number;
+  dislikes: number;
+  image: string | null;
+  comments: Comment[];
+  createdAt: any;
+  updatedAt: any;
+}
 
 interface PostPageProps {
   params: {
-    id: string
+    id: string;
     postId: string
-  }
+  };
 }
 
 export default function PostPage({ params }: PostPageProps) {
-  const community = communities.find((c) => c.id === params.id) || communities[0]
-  const post = community.posts.find((p) => p.id === params.postId) || community.posts[0]
+  const { id,  postId } = useParams();
+  const [post, setPost] = useState<CommunityPost | null>(null);
+  const [commentContent, setCommentContent] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Function to fetch the post from the API
+  const fetchPost = async () => {
+    try {
+      const token = await getIdTokenNoParam();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/community/get-post?postId=${postId}`, {
+        method:"GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPost(data.post);
+      } else {
+        console.error("Error fetching post:", data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching post:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchPost();
+  }, [postId]);
+
+  // Handle comment submission
+  const handleCommentSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!commentContent.trim()) return;
+
+    setLoading(true);
+    try {
+      const token = await getIdTokenNoParam();
+      const currentUser = await getCurrentUser();
+
+      if(token&&currentUser){
+        
+        const payload = {
+          userId: currentUser?.email,
+          postId:postId,
+          content:commentContent
+        }
+  
+  
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/community/add-comment`, {
+          method: "POST",
+          headers: {
+            "Content-Type":"application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          // re-fetch the post to update the comments
+          await fetchPost();
+          setCommentContent("");
+        } else {
+          console.error("Error adding comment:", data.error);
+        }
+      }
+      
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // If post is not loaded yet, show a simple loading state
+  if (!post) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading post...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-b from-blue-50 to-white min-h-screen">
@@ -22,12 +131,9 @@ export default function PostPage({ params }: PostPageProps) {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-                {community.name.charAt(0)}
+                {post.author.charAt(0)}
               </div>
               <div>
-                <Link href={`/community/${community.id}`} className="text-blue-600 font-medium hover:underline">
-                  {community.name}
-                </Link>
                 <div className="flex items-center text-xs text-gray-500">
                   <span>Posted by {post.author}</span>
                   <span className="mx-1">•</span>
@@ -36,12 +142,18 @@ export default function PostPage({ params }: PostPageProps) {
               </div>
             </div>
 
-            <h1 className="text-2xl font-bold text-blue-600 mb-4">{post.title}</h1>
+            <h1 className="text-2xl font-bold text-blue-600 mb-4">
+              {post.title}
+            </h1>
             <p className="text-gray-700 mb-6">{post.content}</p>
 
             {post.image && (
               <div className="mb-6 rounded-lg overflow-hidden">
-                <img src={post.image || "/placeholder.svg"} alt={post.title} className="w-full h-auto" />
+                <img
+                  src={post.image || "/placeholder.svg"}
+                  alt={post.title}
+                  className="w-full h-auto"
+                />
               </div>
             )}
 
@@ -142,17 +254,28 @@ export default function PostPage({ params }: PostPageProps) {
             </div>
 
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-blue-600 mb-4">Add a Comment</h2>
-              <div className="space-y-4">
-                <Textarea placeholder="What are your thoughts?" className="min-h-[100px] border-blue-200" />
+              <h2 className="text-lg font-semibold text-blue-600 mb-4">
+                Add a Comment
+              </h2>
+              <form onSubmit={handleCommentSubmit} className="space-y-4">
+                <Textarea
+                  placeholder="What are your thoughts?"
+                  className="min-h-[100px] border-blue-200"
+                  value={commentContent}
+                  onChange={(e) => setCommentContent(e.target.value)}
+                />
                 <div className="flex justify-end">
-                  <Button className="bg-blue-600 hover:bg-blue-700">Comment</Button>
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                    {loading ? "Posting..." : "Comment"}
+                  </Button>
                 </div>
-              </div>
+              </form>
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-blue-600 mb-4">Comments ({post.comments.length})</h2>
+              <h2 className="text-lg font-semibold text-blue-600 mb-4">
+                Comments ({post.comments.length})
+              </h2>
               <div className="space-y-4">
                 {post.comments.map((comment) => (
                   <CommentItem key={comment.id} comment={comment} />
@@ -163,6 +286,5 @@ export default function PostPage({ params }: PostPageProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }
-
