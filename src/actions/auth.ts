@@ -3,13 +3,22 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
 } from "firebase/auth";
+async function parseResponse(res: Response) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.warn("Unable to parse JSON response, returning raw text:", text);
+    return text;
+  }
+}
 
 /**
  * Calls the backend API to create a new user.
  */
 export async function signUp(email: string, password: string, role: string) {
   try {
-    const response = await fetch("http://localhost:8000/api/auth/sign-up", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/sign-up`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
