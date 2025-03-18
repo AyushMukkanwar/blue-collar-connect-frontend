@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useState, useEffect, FormEvent } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -37,12 +37,12 @@ interface CommunityPost {
 interface PostPageProps {
   params: {
     id: string;
-    postId: string
+    postId: string;
   };
 }
 
 export default function PostPage({ params }: PostPageProps) {
-  const { id,  postId } = useParams();
+  const { id, postId } = useParams();
   const [post, setPost] = useState<CommunityPost | null>(null);
   const [commentContent, setCommentContent] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,12 +51,15 @@ export default function PostPage({ params }: PostPageProps) {
   const fetchPost = async () => {
     try {
       const token = await getIdTokenNoParam();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/community/get-post?postId=${postId}`, {
-        method:"GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/community/get-post?postId=${postId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       const data = await res.json();
       if (res.ok) {
         setPost(data.post);
@@ -82,23 +85,24 @@ export default function PostPage({ params }: PostPageProps) {
       const token = await getIdTokenNoParam();
       const currentUser = await getCurrentUser();
 
-      if(token&&currentUser){
-        
+      if (token && currentUser) {
         const payload = {
           userId: currentUser?.email,
-          postId:postId,
-          content:commentContent
-        }
-  
-  
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/community/add-comment`, {
-          method: "POST",
-          headers: {
-            "Content-Type":"application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload)
-        });
+          postId: postId,
+          content: commentContent,
+        };
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/community/add-comment`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
+          }
+        );
         const data = await res.json();
         if (res.ok) {
           // re-fetch the post to update the comments
@@ -109,7 +113,6 @@ export default function PostPage({ params }: PostPageProps) {
           toast.error("Error adding comment");
         }
       }
-      
     } catch (error) {
       toast.error("Error adding comment");
     } finally {
@@ -267,7 +270,11 @@ export default function PostPage({ params }: PostPageProps) {
                   onChange={(e) => setCommentContent(e.target.value)}
                 />
                 <div className="flex justify-end">
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                  <Button
+                    type="submit"
+                    className="bg-blue-600 hover:bg-blue-700"
+                    disabled={loading}
+                  >
                     {loading ? "Posting..." : "Comment"}
                   </Button>
                 </div>

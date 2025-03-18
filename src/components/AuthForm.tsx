@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { signIn, register } from "@/actions/auth";
-import { getUserProfile } from "@/actions/profile";
+import { getAndSetUserInfo } from "@/userContextUtils";
+import { useUser } from "@/context/userContext";
 
 export default function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(true);
@@ -18,6 +19,7 @@ export default function AuthForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { setUser } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +32,7 @@ export default function AuthForm() {
       const result = isSignUp
         ? await register(email, password, userType)
         : await signIn(email, password);
-        console.log(result)
+      console.log(result);
 
       if (result.error) {
         setError(result.error);
@@ -39,21 +41,14 @@ export default function AuthForm() {
       }
 
       try {
-        const profileResponse = await getUserProfile();
-
-        console.log("user profile = ", profileResponse);
-
-        // If we got here and profileExists is false, redirect to profile creation
-        if (!profileResponse.profileExists) {
-          console.log("push to profile");
-          // router.push("/profile");
-        } else {
-          // Profile exists, redirect to dashboard
-          // router.push("/dashboard");
-        }
+        await getAndSetUserInfo(setUser);
       } catch (error) {
-        console.error("Error checking profile:", error);
+        console.error(
+          "Error in getting and setting userInfo after auth",
+          error
+        );
       }
+      router.push("/home");
     } catch (error) {
       setError("An unexpected error occurred during authentication.");
       console.error(error);

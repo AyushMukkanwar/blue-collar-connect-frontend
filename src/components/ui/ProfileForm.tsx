@@ -10,6 +10,9 @@ import {
 import { UserProfileFormKey } from "@/types/userProfile";
 import { toast } from "sonner";
 import { getCurrentUser, getIdTokenNoParam } from "@/utils";
+import { getUserRole } from "@/actions/userInfo";
+import { useUser } from "@/context/userContext";
+import { profileExists } from "@/userContextUtils";
 
 export default function ProfileForm() {
   const [formData, setFormData] = useState({
@@ -30,42 +33,34 @@ export default function ProfileForm() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const router = useRouter();
 
-  const [profileExists, setProfileExists] = useState<boolean>(false);
+  const userInfo = useUser().user;
 
   // Fetch user profile data when component mounts
   useEffect(() => {
-    const fetchUserProfile = async () => {
+    const fetchUserProfile = () => {
       try {
         setLoading(true);
-        const { profileExists, profile } = await getUserProfile();
 
-        if (profileExists && profile) {
-          setProfileExists(true);
-          // Update form data with profile information
-          setFormData({
-            firstName: profile.firstName || "",
-            middleName: profile.middleName || "",
-            lastName: profile.lastName || "",
-            phoneNumber: profile.phoneNumber || "",
-            emailAddress: profile.emailAddress || "",
-            residentialAddress: profile.residentialAddress || "",
-            profession: profile.profession || "",
-            gender: profile.gender || "",
-            summary: profile.summary || "",
-          });
+        setFormData({
+          firstName: userInfo?.firstName || "",
+          middleName: userInfo?.middleName || "",
+          lastName: userInfo?.lastName || "",
+          phoneNumber: userInfo?.phoneNumber || "",
+          emailAddress: userInfo?.emailAddress || "",
+          residentialAddress: userInfo?.residentialAddress || "",
+          profession: userInfo?.profession || "",
+          gender: userInfo?.gender || "",
+          summary: userInfo?.summary || "",
+        });
 
-          // Store URLs for file fields
-          if (profile.profilePhoto) {
-            setProfilePhotoUrl(profile.profilePhoto);
-          }
+        // Store URLs for file fields
+        if (userInfo?.profilePhoto) {
+          setProfilePhotoUrl(userInfo?.profilePhoto);
+        }
 
-          if (profile.resume) {
-            setResumeUrl(profile.resume);
-          }
-        } else {
-          setProfileExists(false);
+        if (userInfo?.resume) {
+          setResumeUrl(userInfo.resume);
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -141,7 +136,7 @@ export default function ProfileForm() {
       }
 
       // If we have existing profile data, update it, otherwise create new
-      if (profileExists) {
+      if (profileExists()) {
         // Call the update function
         const result = await updateUserProfile(
           userId!,
@@ -168,9 +163,6 @@ export default function ProfileForm() {
         if (result.error) {
           throw new Error(result.error);
         }
-
-        setProfileExists(true);
-        console.log("success");
         toast.success("Profile created successfully 🎉");
         // router.push("/dashboard");
       }
@@ -318,6 +310,7 @@ export default function ProfileForm() {
               <option value="">Select Gender</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
+              <option value="other">LGBTQ+</option>
               <option value="other">Other</option>
               <option value="prefer-not-to-say">Prefer not to say</option>
             </select>

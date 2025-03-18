@@ -67,7 +67,7 @@ export const getCurrentUser = (): Promise<User | null> => {
   });
 };
 
-export async function getUserInfo(idToken: string) {
+export async function getBasicUserInfo(idToken: string) {
   try {
     const backendUrl =
       process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
