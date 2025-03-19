@@ -48,7 +48,7 @@ export default function AuthForm() {
           error
         );
       }
-      router.push("/home");
+      router.push("/");
     } catch (error) {
       setError("An unexpected error occurred during authentication.");
       console.error(error);

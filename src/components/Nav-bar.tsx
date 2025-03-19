@@ -209,7 +209,7 @@ function ProfileContent({
           </AvatarFallback>
         </Avatar>
         <div>
-          <h3 className="font-medium text-lg">John Doe</h3>
+          <h3 className="font-medium text-lg">{user?.firstName}</h3>
           <p className="text-sm text-muted-foreground">{user?.emailAddress}</p>
         </div>
       </div>

@@ -136,7 +136,7 @@ export default function ProfileForm() {
       }
 
       // If we have existing profile data, update it, otherwise create new
-      if (profileExists()) {
+      if (profileExists(userInfo)) {
         // Call the update function
         const result = await updateUserProfile(
           userId!,

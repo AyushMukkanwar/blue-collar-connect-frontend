@@ -67,10 +67,9 @@ export async function getAndSetUserInfo(setUser: (user: User | null) => void) {
   }
 }
 
-export const profileExists = (): boolean => {
-  const { user } = useUser();
+export const profileExists = (user: User | null): boolean => {
   if (user?.firstName) {
-    return false;
+    return true;
   }
-  return true;
+  return false;
 };
