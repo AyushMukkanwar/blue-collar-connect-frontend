@@ -185,7 +185,9 @@ export default function ProfileForm() {
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Complete Your Profile</h1>
+      <h1 className="text-2xl font-bold mb-6">
+        {profileExists(userInfo) ? "Your Profile" : "Complete Your Profile"}
+      </h1>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">

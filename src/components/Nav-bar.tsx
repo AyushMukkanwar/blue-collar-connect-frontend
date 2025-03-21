@@ -6,10 +6,8 @@ import {
   Home,
   User,
   BriefcaseBusiness,
-  Bell,
   Users,
   Bot,
-  X,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,20 +18,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@/context/userContext";
 import { signOut } from "@/actions/auth";
 
-type UserType = "worker" | "employer";
-
-interface NavigationBarProps {
-  userType: UserType;
-}
-
 // Add profileOpen state
-export function NavigationBar({ userType = "worker" }: NavigationBarProps) {
+export function NavigationBar() {
   const router = useRouter();
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { user } = useUser();
 
+  const userType = user?.role || "worker";
   const pathname = usePathname();
 
   if (pathname == "/auth") return null;
@@ -44,34 +37,24 @@ export function NavigationBar({ userType = "worker" }: NavigationBarProps) {
     { name: "Home", icon: Home, path: "/" },
     { name: "AI", icon: Bot, path: "/ai" },
     {
-      name: "Notification",
-      icon: Bell,
-      path: "/notification",
-      isNotification: true,
+      name: "Applied Jobs",
+      icon: BriefcaseBusiness,
+      path: "/applied-jobs",
     },
     { name: "Community", icon: Users, path: "/community" },
   ];
 
   const employerTabs = [
     { name: "Home", icon: Home, path: "/" },
-    { name: "Post Job", icon: BriefcaseBusiness, path: "/post-job" },
-    {
-      name: "Notification",
-      icon: Bell,
-      path: "/notification",
-      isNotification: true,
-    },
+    { name: "AI", icon: Bot, path: "/ai" },
+    { name: "Posts", icon: BriefcaseBusiness, path: "/employer-post" },
   ];
 
   const tabs = userType === "worker" ? workerTabs : employerTabs;
 
   // Update the handleTabClick function to handle profile click
   const handleTabClick = (tab: any) => {
-    if (tab.isNotification) {
-      setNotificationOpen(true);
-    } else {
-      router.push(tab.path);
-    }
+    router.push(tab.path);
   };
 
   // Add a new return statement with the profile avatar and both sheets

@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { getAndSetUserInfo } from "@/userContextUtils";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { getIdTokenNoParam } from "@/utils";
 
 interface AuthStateManagerProps {
   children: React.ReactNode;

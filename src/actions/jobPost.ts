@@ -46,3 +46,98 @@ export async function getJobPosts({
     throw error;
   }
 }
+
+/**
+ * Fetches a job post by its ID from the backend
+ * @param jobId - The ID of the job post to fetch
+ * @param idToken - The authorization token for authentication
+ * @returns The job post data
+ */
+export async function getJobPostById(jobId: string): Promise<JobPost> {
+  try {
+    // Ensure we have a job ID
+    if (!jobId) {
+      throw new Error("Job ID is required");
+    }
+
+    const idToken = await getIdTokenNoParam();
+
+    // Ensure we have an ID token
+    if (!idToken) {
+      throw new Error("Authorization token is required");
+    }
+
+    // Make the request to the backend
+    const response = await fetch(
+      `http://localhost:8000/api/job/job-post/${jobId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // Parse the response
+    const data = await response.json();
+
+    // Check if the request was successful
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to fetch job post");
+    }
+
+    return data.jobPost;
+  } catch (error) {
+    console.error("Error fetching job post:", error);
+    throw error;
+  }
+}
+
+// utils/jobApi.ts
+
+/**
+ * Creates a job post by sending data to the backend API
+ * @param jobData The job post data
+ * @param idToken The Firebase authentication token
+ * @param apiUrl The backend API URL (defaults to localhost:3000 for development)
+ * @returns Promise with the response data
+ */
+export async function createJobPost(jobData: JobPost): Promise<any> {
+  try {
+    const idToken = await getIdTokenNoParam();
+    // Create a FormData object to send the job post data
+    const formData = new FormData();
+
+    // Add all job data fields to the FormData
+    Object.entries(jobData).forEach(([key, value]) => {
+      if (value !== undefined) {
+        // Don't add undefined values
+        if (typeof value === "boolean") {
+          formData.append(key, value.toString());
+        } else {
+          formData.append(key, value as string);
+        }
+      }
+    });
+
+    // Make the API request
+    const response = await fetch("http://localhost:8000/api/job/create", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to create job post");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating job post:", error);
+    throw error;
+  }
+}

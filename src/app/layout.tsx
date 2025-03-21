@@ -35,7 +35,7 @@ export default function RootLayout({
           <UserProvider>
             <AuthStateManager>
               {children}
-              <NavigationBar userType="worker" />
+              <NavigationBar />
             </AuthStateManager>
           </UserProvider>
         </main>
