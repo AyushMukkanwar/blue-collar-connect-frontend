@@ -47,7 +47,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import type { JobPost } from "@/types/jobpost";
+import type { JobPost, JobPostForm } from "@/types/jobpost";
 import { createJobPost } from "@/actions/jobPost";
 
 const formSchema = z.object({
@@ -103,19 +103,17 @@ export default function JobPostForm() {
     setIsSubmitting(true);
     try {
       // Transform form data to match JobPost interface
-      const jobPostData: JobPost = {
+      const jobPostData: JobPostForm = {
         id: crypto.randomUUID(), // Generate a random ID for now
-        employer_id: "current-employer-id", // This would come from auth context
+        employer_id: "current-employer-id",
         job_title: values.job_title,
         type_of_work: values.type_of_work,
         employer_name: values.employer_name,
         place_of_work: values.place_of_work,
-        location: {
-          city: values.city,
-          state: values.state,
-          district: values.district,
-          pincode: values.pincode,
-        },
+        city: values.city,
+        state: values.state,
+        district: values.district,
+        pincode: values.pincode,
         vacancies: values.vacancies,
         special_woman_provision: values.special_woman_provision,
         special_transgender_provision: values.special_transgender_provision,
@@ -129,8 +127,8 @@ export default function JobPostForm() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-
       await createJobPost(jobPostData);
+
       setSubmitSuccess(true);
       // Reset form after successful submission
       form.reset();

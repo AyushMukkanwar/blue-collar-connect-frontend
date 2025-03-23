@@ -1,4 +1,4 @@
-import { JobPost } from "@/types/jobpost"; // Import your JobPost interface
+import { JobPost, JobPostForm } from "@/types/jobpost"; // Import your JobPost interface
 import { getIdTokenNoParam } from "@/utils";
 
 export async function getJobPosts({
@@ -103,7 +103,7 @@ export async function getJobPostById(jobId: string): Promise<JobPost> {
  * @param apiUrl The backend API URL (defaults to localhost:3000 for development)
  * @returns Promise with the response data
  */
-export async function createJobPost(jobData: JobPost): Promise<any> {
+export async function createJobPost(jobData: JobPostForm): Promise<any> {
   try {
     const idToken = await getIdTokenNoParam();
     // Create a FormData object to send the job post data

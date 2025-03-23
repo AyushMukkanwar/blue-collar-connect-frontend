@@ -56,7 +56,7 @@ export default function JobDetailPage() {
         job.location.city,
         job.location.district,
         job.location.state,
-        job.location.pincode && `(${job.location.pincode})`,
+        job.location.pincode,
       ]
         .filter(Boolean)
         .join(", ")
@@ -77,7 +77,8 @@ export default function JobDetailPage() {
   }
 
   // Determine the location string to pass to the map dialog.
-  const mapLocation = formattedLocation || job.place_of_work || "Unknown Location"
+  const mapLocation = (job.place_of_work || "") + ", " + (formattedLocation || "")
+  console.log(mapLocation)
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 max-w-4xl">
