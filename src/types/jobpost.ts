@@ -14,7 +14,7 @@ export interface JobPost {
   vacancies?: number;
   special_woman_provision?: boolean;
   special_transgender_provision?: boolean;
-  special_disabled_provision?: boolean;
+  special_disability_provision?: boolean;
   wage?: string;
   hours_per_week?: number;
   job_duration?: string;

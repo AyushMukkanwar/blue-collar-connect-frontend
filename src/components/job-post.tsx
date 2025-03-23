@@ -119,7 +119,7 @@ export default function JobPostForm() {
         vacancies: values.vacancies,
         special_woman_provision: values.special_woman_provision,
         special_transgender_provision: values.special_transgender_provision,
-        special_disabled_provision: values.special_disabled_provision,
+        special_disability_provision: values.special_disabled_provision,
         wage: values.wage,
         hours_per_week: values.hours_per_week,
         job_duration: values.job_duration,

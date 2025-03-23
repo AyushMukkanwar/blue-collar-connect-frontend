@@ -35,7 +35,7 @@ export function NavigationBar() {
   // We'll handle it separately
   const workerTabs = [
     { name: "Home", icon: Home, path: "/" },
-    { name: "AI", icon: Bot, path: "/ai" },
+    { name: "AI", icon: Bot, path: "/chat" },
     {
       name: "Applied Jobs",
       icon: BriefcaseBusiness,
@@ -46,7 +46,7 @@ export function NavigationBar() {
 
   const employerTabs = [
     { name: "Home", icon: Home, path: "/" },
-    { name: "AI", icon: Bot, path: "/ai" },
+    { name: "AI", icon: Bot, path: "/chat" },
     { name: "Posts", icon: BriefcaseBusiness, path: "/employer-post" },
   ];
 
@@ -81,6 +81,23 @@ export function NavigationBar() {
                 isDesktop ? "justify-end space-x-8" : "justify-between"
               )}
             >
+              {tabs.map((tab) => (
+                <button
+                  key={tab.name}
+                  onClick={() => handleTabClick(tab)}
+                  className={cn(
+                    "flex flex-col items-center justify-center py-3 px-2 md:px-4 md:py-4 md:flex-row md:space-x-2 relative group",
+                    "transition-colors hover:text-primary",
+                    "flex-1 md:flex-initial"
+                  )}
+                >
+                  <tab.icon className="h-6 w-6 md:h-5 md:w-5" />
+                  <span className="text-xs mt-1 md:text-sm md:mt-0 hidden md:block">
+                    {tab.name}
+                  </span>
+                </button>
+              ))}
+
               {/* Profile Avatar Button */}
               <button
                 onClick={() => setProfileOpen(true)}
@@ -103,23 +120,6 @@ export function NavigationBar() {
                   </AvatarFallback>
                 </Avatar>
               </button>
-
-              {tabs.map((tab) => (
-                <button
-                  key={tab.name}
-                  onClick={() => handleTabClick(tab)}
-                  className={cn(
-                    "flex flex-col items-center justify-center py-3 px-2 md:px-4 md:py-4 md:flex-row md:space-x-2 relative group",
-                    "transition-colors hover:text-primary",
-                    "flex-1 md:flex-initial"
-                  )}
-                >
-                  <tab.icon className="h-6 w-6 md:h-5 md:w-5" />
-                  <span className="text-xs mt-1 md:text-sm md:mt-0">
-                    {tab.name}
-                  </span>
-                </button>
-              ))}
             </div>
           </div>
         </div>

@@ -150,15 +150,6 @@ export default function ChatPage() {
   return (
     <div className="container mx-auto py-8 px-4 md:px-6">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Job Search Assistant
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Get personalized help with your blue collar job search
-          </p>
-        </div>
-
         <Card className="border rounded-xl shadow-lg overflow-hidden bg-gradient-to-b from-background to-muted/30">
           <div className="flex flex-col h-[650px]">
             {/* Chat header */}
@@ -303,28 +294,6 @@ export default function ChatPage() {
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
-
-            {/* Quick replies */}
-            {messages.length < 3 && (
-              <div className="px-4 py-3 bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900/50 dark:to-blue-900/50 border-t border-b">
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  Suggested questions:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {quickReplies.map((reply) => (
-                    <Button
-                      key={reply.id}
-                      variant="outline"
-                      size="sm"
-                      className="bg-white/80 dark:bg-slate-800/80 text-sm rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-                      onClick={() => handleSendMessage(reply.text)}
-                    >
-                      {reply.text}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Chat input */}
             <div className="p-4 border-t bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900/50 dark:to-blue-900/50">

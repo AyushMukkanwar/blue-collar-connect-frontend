@@ -74,16 +74,21 @@ export function JobsList() {
       locationFilter === "all"
         ? true
         : job.location?.city?.includes(locationFilter);
+
     const matchesType =
       typeFilter === "all" ? true : job.type_of_work === typeFilter;
-    const matchesInclusivity =
-      inclusivityFilter === "all"
-        ? true
-        : inclusivityFilter === "women-friendly"
-        ? !!job.special_woman_provision
-        : inclusivityFilter === "lgbt-friendly"
-        ? !!job.special_transgender_provision
-        : false;
+
+    // Using explicit boolean checks for each inclusivity option
+    const matchesInclusivity = (() => {
+      if (inclusivityFilter === "all") return true;
+      if (inclusivityFilter === "women-friendly")
+        return job.special_woman_provision === true;
+      if (inclusivityFilter === "lgbt-friendly")
+        return job.special_transgender_provision === true;
+      if (inclusivityFilter === "disability-friendly")
+        return job.special_disability_provision === true;
+      return false;
+    })();
 
     return (
       matchesSearch && matchesLocation && matchesType && matchesInclusivity
@@ -445,6 +450,8 @@ export function JobsList() {
                         ? "border-l-4 border-l-pink-500"
                         : job.special_transgender_provision
                         ? "border-l-4 border-l-purple-500"
+                        : job.special_disability_provision
+                        ? "border-l-4 border-l-blue-500"
                         : ""
                     }`}
                   >
@@ -471,6 +478,11 @@ export function JobsList() {
                             LGBTQ+
                           </Badge>
                         )}
+                        {job.special_disability_provision && (
+                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300">
+                            Disability-friendly
+                          </Badge>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent className="pb-2">
@@ -480,9 +492,9 @@ export function JobsList() {
                           <span className="truncate">
                             {job.place_of_work ||
                               (job.location
-                                ? `${job.location.city || ""} ${
-                                    job.location.state || ""
-                                  }`.trim()
+                                ? [job.location.city, job.location.state]
+                                    .filter(Boolean)
+                                    .join(", ")
                                 : "Location not provided")}
                           </span>
                         </div>

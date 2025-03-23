@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { JobPost } from "@/types/jobpost";
 
 interface JobLocation {
   city?: string;
@@ -39,33 +40,12 @@ interface JobLocation {
   pincode?: string;
 }
 
-interface Job {
-  id: string;
-  employer_id: string;
-  job_title: string;
-  type_of_work: string;
-  employer_name?: string;
-  place_of_work?: string;
-  location?: JobLocation;
-  vacancies?: number;
-  special_woman_provision?: boolean;
-  special_transgender_provision?: boolean;
-  wage?: string;
-  hours_per_week?: number;
-  job_duration?: string;
-  start_time?: string;
-  end_time?: string;
-  job_role_description?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
 export default function AppliedJobs() {
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<JobPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string | null>(null);
-  const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
+  const [filteredJobs, setFilteredJobs] = useState<JobPost[]>([]);
 
   useEffect(() => {
     // Retrieve jobs from localStorage
@@ -207,6 +187,8 @@ export default function AppliedJobs() {
                   ? "border-l-4 border-l-pink-500"
                   : job.special_transgender_provision
                   ? "border-l-4 border-l-purple-500"
+                  : job.special_disability_provision
+                  ? "border-l-4 border-l-blue-500"
                   : ""
               }`}
             >
@@ -231,6 +213,11 @@ export default function AppliedJobs() {
                   {job.special_transgender_provision && (
                     <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300">
                       LGBTQ+
+                    </Badge>
+                  )}
+                  {job.special_disability_provision && (
+                    <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300">
+                      Disabled
                     </Badge>
                   )}
                 </div>
