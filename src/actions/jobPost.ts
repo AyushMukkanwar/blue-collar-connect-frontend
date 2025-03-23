@@ -22,9 +22,7 @@ export async function getJobPosts({
 
     // Make the API request
     const response = await fetch(
-      `${
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-      }/api/job/all?${params.toString()}`,
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/job/all?${params.toString()}`,
       {
         method: "GET",
         headers: {
@@ -69,7 +67,7 @@ export async function getJobPostById(jobId: string): Promise<JobPost> {
 
     // Make the request to the backend
     const response = await fetch(
-      `http://localhost:8000/api/job/job-post/${jobId}`,
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/job/job-post/${jobId}`,
       {
         method: "GET",
         headers: {
@@ -122,13 +120,16 @@ export async function createJobPost(jobData: JobPostForm): Promise<any> {
     });
 
     // Make the API request
-    const response = await fetch("http://localhost:8000/api/job/create", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-      },
-      body: formData,
-    });
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/job/create`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: formData,
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json();

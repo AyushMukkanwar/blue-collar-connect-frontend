@@ -26,14 +26,17 @@ export async function getUserRole(): Promise<GetRoleResponse> {
       userId,
     };
 
-    const response = await fetch("http://localhost:8000/api/user/get-role", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${idToken}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/get-role`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
 
     const data = await response.json();
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, JSX } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,8 +9,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Send, Bot, User2, Briefcase, Clock, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { v4 as uuidv4 } from "uuid";
+import ReactMarkdown from "react-markdown";
 
-// Types for our chat messages
 type MessageRole = "user" | "assistant";
 
 interface Message {
@@ -18,15 +19,12 @@ interface Message {
   role: MessageRole;
   content: string;
   timestamp: Date;
+  error?: boolean;
+  isLoading?: boolean;
 }
 
-// Quick reply suggestions
-const quickReplies = [
-  { id: 1, text: "Find jobs near me" },
-  { id: 2, text: "Resume tips" },
-  { id: 3, text: "Interview preparation" },
-  { id: 4, text: "Salary information" },
-];
+const CHUNK_TIMEOUT = 30000; // 30 seconds without data
+const MAX_RETRIES = 3;
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
@@ -38,11 +36,17 @@ export default function ChatPage() {
       timestamp: new Date(),
     },
   ]);
-
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Refs for streaming
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const chunkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryCountRef = useRef<number>(0);
+  const thread_id = useRef<string>(uuidv4());
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -54,97 +58,219 @@ export default function ChatPage() {
     inputRef.current?.focus();
   }, []);
 
+  // Cleanup the stream on component unmount
+  useEffect(() => {
+    return () => {
+      cleanupStream();
+    };
+  }, []);
+
+  const cleanupStream = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (chunkTimeoutRef.current) {
+      clearTimeout(chunkTimeoutRef.current);
+      chunkTimeoutRef.current = null;
+    }
+    setIsLoading(false);
+  };
+
+  const startChunkTimeout = (assistantMessageId: string) => {
+    if (chunkTimeoutRef.current) {
+      clearTimeout(chunkTimeoutRef.current);
+    }
+    chunkTimeoutRef.current = setTimeout(() => {
+      console.error("No data received for 30 seconds");
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessageId
+            ? {
+                ...msg,
+                content:
+                  msg.content +
+                  "\n[Error: Response timeout - No data received for 30 seconds]",
+                error: true,
+                isLoading: false,
+              }
+            : msg
+        )
+      );
+      cleanupStream();
+    }, CHUNK_TIMEOUT);
+  };
+
+  const handleStreamError = (assistantMessageId: string, errorMsg: string) => {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === assistantMessageId
+          ? {
+              ...msg,
+              content: msg.content + `\n[Error: ${errorMsg}]`,
+              error: true,
+              isLoading: false,
+            }
+          : msg
+      )
+    );
+    cleanupStream();
+  };
+
   // Handle sending a message
   const handleSendMessage = async (text = input) => {
     if (!text.trim()) return;
 
+    // Reset any existing stream and retry count
+    cleanupStream();
+    retryCountRef.current = 0;
+    setIsLoading(true);
+
     // Create a new user message
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       role: "user",
       content: text,
       timestamp: new Date(),
     };
 
-    // Add user message to chat
-    setMessages((prev) => [...prev, userMessage]);
+    // Create a placeholder assistant message with loading state
+    const assistantMessageId = uuidv4();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+      isLoading: true,
+    };
+
+    // Add both messages to the chat
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setInput("");
-    setIsLoading(true);
 
     try {
-      // This is where you would integrate your own AI solution
-      // For now, we'll just simulate a response after a delay
-      await simulateAIResponse(userMessage.content);
+      // Open a connection to your chatbot backend using EventSource
+      console.log("before sending request", text);
+      const url = `${
+        process.env.NEXT_PUBLIC_CHAT_URL
+      }/api/stream-prompt?thread_id=${
+        thread_id.current
+      }&prompt=${encodeURIComponent(text)}`;
+      const eventSource = new EventSource(url);
+      eventSourceRef.current = eventSource;
+
+      let fullMessage = "";
+
+      eventSource.onmessage = (event) => {
+        try {
+          const content = event.data;
+          if (content) {
+            // Reset the chunk timeout every time data is received
+            startChunkTimeout(assistantMessageId);
+
+            // If the backend sends an error message, handle it
+            if (content.includes("[Error:")) {
+              handleStreamError(assistantMessageId, content);
+              return;
+            }
+
+            // Append the chunk to the full message and update the assistant message
+            fullMessage += content;
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantMessageId
+                  ? { ...msg, content: fullMessage, isLoading: false }
+                  : msg
+              )
+            );
+          }
+        } catch (error) {
+          console.error("Error processing stream message:", error);
+          handleStreamError(assistantMessageId, "Failed to process response");
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error("Stream error:", error);
+        retryCountRef.current++;
+        if (retryCountRef.current >= MAX_RETRIES) {
+          handleStreamError(
+            assistantMessageId,
+            "Connection failed after multiple retries"
+          );
+        }
+      };
+
+      // Listen for a custom "done" event to clean up
+      eventSource.addEventListener("done", () => {
+        cleanupStream();
+      });
     } catch (error) {
-      console.error("Error getting AI response:", error);
-
-      // Add error message
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
-          timestamp: new Date(),
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
+      console.error("Error connecting to stream:", error);
+      handleStreamError(assistantMessageId, "Failed to establish connection");
     }
   };
 
-  // Simulate AI response (replace this with your actual AI integration)
-  const simulateAIResponse = async (userMessage: string) => {
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Generate a simple response based on keywords in the user message
-    let response = "";
-
-    if (userMessage.toLowerCase().includes("job")) {
-      response =
-        "I can help you find job opportunities that match your skills and preferences. What type of blue collar job are you looking for?";
-    } else if (
-      userMessage.toLowerCase().includes("resume") ||
-      userMessage.toLowerCase().includes("cv")
-    ) {
-      response =
-        "Having a well-crafted resume is important. Would you like some tips on how to improve your resume for blue collar job applications?";
-    } else if (userMessage.toLowerCase().includes("interview")) {
-      response =
-        "Preparing for interviews is crucial. I can provide some common interview questions for blue collar positions if you'd like.";
-    } else if (
-      userMessage.toLowerCase().includes("salary") ||
-      userMessage.toLowerCase().includes("pay")
-    ) {
-      response =
-        "Salary ranges vary by position, location, and experience. Is there a specific job role you'd like salary information about?";
-    } else if (
-      userMessage.toLowerCase().includes("near me") ||
-      userMessage.toLowerCase().includes("location")
-    ) {
-      response =
-        "I can help you find jobs in your area. Could you please specify your city or zip code so I can show you relevant opportunities?";
-    } else {
-      response =
-        "I'm here to help with your job search. You can ask me about job listings, application tips, interview preparation, or anything else related to finding a blue collar job.";
-    }
-
-    // Add AI response to chat
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: response,
-        timestamp: new Date(),
-      },
-    ]);
-  };
-
-  // Format timestamp
+  // Format timestamp for display
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  // Render message content with markdown support
+  const renderMessageContent = (content: string): JSX.Element => {
+    return (
+      <ReactMarkdown
+        components={{
+          p: ({ node, children, ...props }) => (
+            <p className="text-sm leading-relaxed" {...props}>
+              {children}
+            </p>
+          ),
+          strong: ({ node, children, ...props }) => (
+            <span className="font-bold text-primary" {...props}>
+              {children}
+            </span>
+          ),
+          em: ({ node, children, ...props }) => (
+            <span className="italic text-primary-foreground/80" {...props}>
+              {children}
+            </span>
+          ),
+          h1: ({ node, children, ...props }) => (
+            <h1 className="text-lg font-bold mb-2" {...props}>
+              {children}
+            </h1>
+          ),
+          h2: ({ node, children, ...props }) => (
+            <h2 className="text-md font-bold mb-1.5" {...props}>
+              {children}
+            </h2>
+          ),
+          h3: ({ node, children, ...props }) => (
+            <h3 className="text-sm font-bold mb-1" {...props}>
+              {children}
+            </h3>
+          ),
+          ul: ({ node, children, ...props }) => (
+            <ul className="list-disc pl-5 my-2" {...props}>
+              {children}
+            </ul>
+          ),
+          ol: ({ node, children, ...props }) => (
+            <ol className="list-decimal pl-5 my-2" {...props}>
+              {children}
+            </ol>
+          ),
+          li: ({ node, children, ...props }) => (
+            <li className="mb-1" {...props}>
+              {children}
+            </li>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    );
   };
 
   return (
@@ -235,7 +361,7 @@ export default function ChatPage() {
                           </>
                         )}
                       </Avatar>
-                      <div>
+                      <div className="flex-1">
                         <div
                           className={`rounded-2xl px-4 py-2.5 shadow-sm ${
                             message.role === "assistant"
@@ -243,9 +369,28 @@ export default function ChatPage() {
                               : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
                           }`}
                         >
-                          <p className="text-sm leading-relaxed">
-                            {message.content}
-                          </p>
+                          {message.isLoading ? (
+                            <div className="flex space-x-2 py-1">
+                              <div
+                                className="w-2 h-2 rounded-full bg-blue-400 animate-bounce"
+                                style={{ animationDelay: "0ms" }}
+                              ></div>
+                              <div
+                                className="w-2 h-2 rounded-full bg-blue-400 animate-bounce"
+                                style={{ animationDelay: "150ms" }}
+                              ></div>
+                              <div
+                                className="w-2 h-2 rounded-full bg-blue-400 animate-bounce"
+                                style={{ animationDelay: "300ms" }}
+                              ></div>
+                            </div>
+                          ) : message.role === "user" ? (
+                            <p className="text-sm leading-relaxed">
+                              {message.content}
+                            </p>
+                          ) : (
+                            renderMessageContent(message.content)
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1.5 ml-2">
                           {formatTime(message.timestamp)}
@@ -254,43 +399,6 @@ export default function ChatPage() {
                     </div>
                   </motion.div>
                 ))}
-                {isLoading && (
-                  <motion.div
-                    className="flex justify-start"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    <div className="flex items-start gap-3 max-w-[85%]">
-                      <Avatar className="h-9 w-9 mt-0.5 border-2 border-blue-200 dark:border-blue-800">
-                        <AvatarImage
-                          src="/placeholder.svg?height=36&width=36"
-                          alt="AI Assistant"
-                        />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
-                          <Bot size={16} />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="rounded-2xl px-4 py-2.5 bg-white dark:bg-slate-800 border border-blue-100 dark:border-blue-900 shadow-sm">
-                          <div className="flex space-x-2">
-                            <div
-                              className="w-2 h-2 rounded-full bg-blue-400 animate-bounce"
-                              style={{ animationDelay: "0ms" }}
-                            ></div>
-                            <div
-                              className="w-2 h-2 rounded-full bg-blue-400 animate-bounce"
-                              style={{ animationDelay: "150ms" }}
-                            ></div>
-                            <div
-                              className="w-2 h-2 rounded-full bg-blue-400 animate-bounce"
-                              style={{ animationDelay: "300ms" }}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
