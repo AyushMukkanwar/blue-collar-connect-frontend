@@ -1,67 +1,54 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ArrowLeft,
-  Briefcase,
-  Calendar,
-  Clock,
-  MapPin,
-  Users,
-  Banknote,
-  Building,
-} from "lucide-react";
-import { getJobPostById } from "@/actions/jobPost";
-import { useEffect, useState } from "react";
-import type { JobPost } from "@/types/jobpost";
+import Link from "next/link"
+import { useParams } from "next/navigation"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ArrowLeft, Briefcase, Calendar, Clock, MapPin, Users, Banknote, Building } from "lucide-react"
+import { getJobPostById } from "@/actions/jobPost"
+import { useEffect, useState } from "react"
+import type { JobPost } from "@/types/jobpost"
+import GoogleMapDialog from "@/components/google-map-dialog"
 
 export default function JobDetailPage() {
-  const params = useParams();
-  const id = params.id as string;
+  const params = useParams()
+  const id = params.id as string
 
-  const [job, setJob] = useState<JobPost | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [applied, setApplied] = useState(false);
+  const [job, setJob] = useState<JobPost | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [applied, setApplied] = useState(false)
+  const [isMapOpen, setIsMapOpen] = useState(false) // state to toggle the map dialog
 
   useEffect(() => {
     async function loadJob() {
       try {
-        const jobData = await getJobPostById(id);
+        const jobData = await getJobPostById(id)
         if (!jobData) {
-          setError(true);
-          return;
+          setError(true)
+          return
         }
-        setJob(jobData);
+        setJob(jobData)
       } catch (err) {
-        console.error("Error fetching job:", err);
-        setError(true);
+        console.error("Error fetching job:", err)
+        setError(true)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
     }
 
-    loadJob();
-  }, [id]);
+    loadJob()
+  }, [id])
 
   if (loading) {
-    return <LoadingState />;
+    return <LoadingState />
   }
 
   if (error || !job) {
-    return <ErrorState />;
+    return <ErrorState />
   }
 
   const formattedLocation = job.location
@@ -69,25 +56,29 @@ export default function JobDetailPage() {
         job.location.city,
         job.location.district,
         job.location.state,
-        job.location.pincode && `(${job.location.pincode})`,
+        job.location.pincode,
       ]
         .filter(Boolean)
         .join(", ")
-    : null;
+    : null
 
   const handleApply = () => {
     if (typeof window !== "undefined") {
       // Get existing jobs from localStorage
-      const existingJobs = JSON.parse(localStorage.getItem("jobs") || "[]");
+      const existingJobs = JSON.parse(localStorage.getItem("jobs") || "[]")
 
       // Append new job data
-      const updatedJobs = [...existingJobs, job];
+      const updatedJobs = [...existingJobs, job]
 
       // Save back to localStorage
-      localStorage.setItem("jobs", JSON.stringify(updatedJobs));
-      setApplied(true);
+      localStorage.setItem("jobs", JSON.stringify(updatedJobs))
+      setApplied(true)
     }
-  };
+  }
+
+  // Determine the location string to pass to the map dialog.
+  const mapLocation = (job.place_of_work || "") + ", " + (formattedLocation || "")
+  console.log(mapLocation)
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 max-w-4xl">
@@ -103,9 +94,7 @@ export default function JobDetailPage() {
         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-t-lg pb-4">
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
             <div>
-              <CardTitle className="text-2xl md:text-3xl font-bold">
-                {job.job_title}
-              </CardTitle>
+              <CardTitle className="text-2xl md:text-3xl font-bold">{job.job_title}</CardTitle>
               {job.employer_name && (
                 <div className="flex items-center text-muted-foreground mt-2">
                   <Building className="h-4 w-4 mr-1" />
@@ -142,6 +131,14 @@ export default function JobDetailPage() {
                     {job.place_of_work || "Not specified"}
                     {formattedLocation && <span> - {formattedLocation}</span>}
                   </p>
+                  <Button
+                    onClick={() => setIsMapOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                  >
+                    View Map
+                  </Button>
                 </div>
               </div>
 
@@ -149,9 +146,7 @@ export default function JobDetailPage() {
                 <Users className="h-5 w-5 text-muted-foreground mr-2 mt-0.5 flex-shrink-0" />
                 <div>
                   <h3 className="font-medium">Vacancies</h3>
-                  <p className="text-muted-foreground">
-                    {job.vacancies || "Not specified"}
-                  </p>
+                  <p className="text-muted-foreground">{job.vacancies || "Not specified"}</p>
                 </div>
               </div>
 
@@ -159,9 +154,7 @@ export default function JobDetailPage() {
                 <Calendar className="h-5 w-5 text-muted-foreground mr-2 mt-0.5 flex-shrink-0" />
                 <div>
                   <h3 className="font-medium">Duration</h3>
-                  <p className="text-muted-foreground">
-                    {job.job_duration || "Not specified"}
-                  </p>
+                  <p className="text-muted-foreground">{job.job_duration || "Not specified"}</p>
                 </div>
               </div>
             </div>
@@ -171,9 +164,7 @@ export default function JobDetailPage() {
                 <Banknote className="h-5 w-5 text-muted-foreground mr-2 mt-0.5 flex-shrink-0" />
                 <div>
                   <h3 className="font-medium">Wage</h3>
-                  <p className="text-green-600 font-semibold">
-                    {job.wage || "Not specified"}
-                  </p>
+                  <p className="text-green-600 font-semibold">{job.wage || "Not specified"}</p>
                 </div>
               </div>
 
@@ -182,9 +173,7 @@ export default function JobDetailPage() {
                 <div>
                   <h3 className="font-medium">Working Hours</h3>
                   <p className="text-muted-foreground">
-                    {job.hours_per_week
-                      ? `${job.hours_per_week} hours/week`
-                      : "Not specified"}
+                    {job.hours_per_week ? `${job.hours_per_week} hours/week` : "Not specified"}
                     {job.start_time && job.end_time && (
                       <span className="block mt-1">
                         {job.start_time} - {job.end_time}
@@ -207,9 +196,7 @@ export default function JobDetailPage() {
               {job.job_role_description ? (
                 <p>{job.job_role_description}</p>
               ) : (
-                <p className="text-muted-foreground italic">
-                  No description provided.
-                </p>
+                <p className="text-muted-foreground italic">No description provided.</p>
               )}
             </div>
           </div>
@@ -233,8 +220,16 @@ export default function JobDetailPage() {
             ` • Updated on ${new Date(job.updatedAt).toLocaleDateString()}`}
         </p>
       )}
+
+      {/* Google Map Dialog */}
+      <GoogleMapDialog
+        isOpen={isMapOpen}
+        onClose={() => setIsMapOpen(false)}
+        location={mapLocation}
+        title="Job Location"
+      />
     </div>
-  );
+  )
 }
 
 function LoadingState() {
@@ -289,7 +284,7 @@ function LoadingState() {
         </CardFooter>
       </Card>
     </div>
-  );
+  )
 }
 
 function ErrorState() {
@@ -326,8 +321,7 @@ function ErrorState() {
             </div>
             <h2 className="text-2xl font-bold">Job Not Found</h2>
             <p className="text-muted-foreground max-w-md">
-              We couldn't find the job you're looking for. It may have been
-              removed or the link might be incorrect.
+              We couldn't find the job you're looking for. It may have been removed or the link might be incorrect.
             </p>
             <Button asChild className="mt-4">
               <Link href="/jobs">Browse All Jobs</Link>
@@ -336,5 +330,5 @@ function ErrorState() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
